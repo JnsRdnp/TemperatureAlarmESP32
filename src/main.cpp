@@ -22,7 +22,7 @@ int8_t checkRotaryEncoder();
 #define SW_PIN 18
 
 // EEPROM SIZE
-#define EEPROM_SIZE 2
+#define EEPROM_SIZE 1
 
 // Create a new instance of the oneWire class to communicate with any OneWire device:
 OneWire oneWire(ONE_WIRE_BUS);
@@ -44,10 +44,16 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 float storedTemp;
 float storedTempDiv;
 
+
 void setup() {
   // Begin serial communication at a baud rate of 9600:
   Serial.begin(115200);
+  // setup EEPROM
   EEPROM.begin(EEPROM_SIZE);
+
+  storedTemp=EEPROM.read(0);
+  storedTempDiv = storedTemp/10;
+  rotationCounter = storedTempDiv;
 
   // lcd setup
   lcd.init();
@@ -64,27 +70,10 @@ void setup() {
 }
 
 void loop() {
-  lcd.setCursor(0, 0);
-  lcd.print("Set alarm temp:");
-
-  Serial.println(rotationCounter);
-  while(counterSaved==false){
-    rotaryFunction();
-  }
-
-  Serial.println("Tempertature saved");
-  lcd.setCursor(0, 0);
-  lcd.print("Tempertature");
-  lcd.setCursor(0, 1);
-  lcd.print("saved");
-  lcd.setCursor(6,1);
-  lcd.print(rotationCounter);
-  delay(2500);
-  lcd.clear();
-  //lcd.noBacklight();
-
   while(digitalRead(SW_PIN)==1){
     storedTemp=EEPROM.read(0);
+    Serial.println(storedTemp);
+    delay(1000);
     storedTempDiv = storedTemp/10;
 
     if (tempertatureFunction()>= storedTempDiv)
@@ -95,15 +84,36 @@ void loop() {
   counterSaved = false;
   lcd.clear();
 
-  lcd.backlight();
   Serial.println("Change tempertature");
   lcd.setCursor(0, 0);
   lcd.print("Change");
   lcd.setCursor(0, 1);
   lcd.print("tempertature");
 
-  delay(2500);
+  delay(2000);
   lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Set alarm temp:");
+  storedTemp=EEPROM.read(0);
+  storedTempDiv = storedTemp/10;
+  lcd.setCursor(0, 1);
+  lcd.print(storedTempDiv);
+
+  Serial.println(rotationCounter);
+  while(counterSaved==false){
+    rotaryFunction();
+  }
+  Serial.println("Tempertature saved");
+  lcd.setCursor(0, 0);
+  lcd.print("Tempertature");
+  lcd.setCursor(0, 1);
+  lcd.print("saved");
+  lcd.setCursor(6,1);
+  lcd.print(rotationCounter);
+  delay(2000);
+  lcd.clear();
+  //lcd.noBacklight();
 }
 
 void rotaryFunction(){
@@ -134,6 +144,7 @@ void rotaryFunction(){
       float rotationCounterTen = rotationCounter * 10;
 
       EEPROM.write(0, rotationCounterTen);
+      EEPROM.commit();
 
       // save position value to EEPROM and multiply by 10 to save decimals.
 
@@ -240,3 +251,5 @@ int8_t checkRotaryEncoder(){
     lrsum = 0;
     return 0;
 }
+
+
